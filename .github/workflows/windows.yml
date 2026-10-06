@@ -1,0 +1,54 @@
+name: Windows build and checks
+
+on:
+  push:
+    branches: [main, master]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - run: npm run test:desktop
+      - run: npm run dist
+      - name: Smoke test packaged executable
+        shell: pwsh
+        run: |
+          $env:QLR_SMOKE_EXE = (Resolve-Path './release/win-unpacked/QuanLyRemote.exe').Path
+          npm run test:desktop
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - run: npm run test:portable
+      - name: Release checksums
+        shell: pwsh
+        run: |
+          Get-ChildItem -LiteralPath './release' -Filter '*.exe' | ForEach-Object {
+            $hash = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLower()
+            "$hash  $($_.Name)"
+          } | Set-Content -LiteralPath './release/SHA256SUMS.txt'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: QuanLyRemote-windows-x64
+          path: |
+            release/*.exe
+            release/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: validation-evidence
+          path: |
+            artifacts/*.json
+            artifacts/*.png

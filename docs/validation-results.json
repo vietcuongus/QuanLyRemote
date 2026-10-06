@@ -1,0 +1,36 @@
+{
+  "date": "2026-10-06",
+  "unitAndIntegration": {
+    "passed": 20,
+    "failed": 0
+  },
+  "packagedDesktop": {
+    "passed": true,
+    "steps": [
+      "Empty production workspace renders with no fabricated connections.",
+      "Sample preview is labelled; protocol filters and search work.",
+      "Connection form saves a profile and DPAPI-encrypted credentials; no plaintext secret on disk.",
+      "Actual desktop SSH connects through verified host-key dialog, runs interactive terminal I/O and displays UTF-8.",
+      "Dual-pane SFTP lists files, uploads, downloads and creates an actual remote directory from the UI.",
+      "Saved commands, theme persistence, English UI and keyboard command palette work.",
+      "No renderer errors. Sandbox, context isolation and disabled Node integration verified."
+    ],
+    "errors": [],
+    "security": {
+      "sandbox": true,
+      "contextIsolation": true,
+      "nodeIntegration": false
+    }
+  },
+  "portable": {
+    "passed": true,
+    "executable": "QuanLyRemote-1.0.0-x64-portable.exe",
+    "version": "1.0.0",
+    "encryptionAvailable": true,
+    "initialProfiles": 0
+  },
+  "productionDependencyAudit": {
+    "vulnerabilities": 0
+  },
+  "rdp": "Windows client launch integration; no remote RDP server supplied."
+}
