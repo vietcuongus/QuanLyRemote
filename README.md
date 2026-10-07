@@ -11,6 +11,8 @@ Tải từ [GitHub Releases](https://github.com/vietcuongus/QuanLyRemote/release
 - `QuanLyRemote-1.0.1-x64-setup.exe`: bộ cài, chọn thư mục cài đặt, tạo shortcut.
 - `QuanLyRemote-1.0.1-x64-portable.exe`: chạy trực tiếp, không cần cài Node.js hoặc phần mềm terminal khác.
 
+**Cập nhật từ bản cũ:** đóng QuanLyRemote, chạy bộ cài mới và cài đè trên cùng tài khoản Windows. Kết nối, nhóm, lệnh đã lưu và mật khẩu mã hóa được giữ trong AppData. Nếu đang dùng portable, đóng file cũ rồi chạy file portable mới. Nếu có thiết lập `QLR_DATA_DIR`, tiếp tục dùng cùng thư mục dữ liệu đó.
+
 Yêu cầu **Windows 10/11 64-bit**. RDP sử dụng Windows Remote Desktop (`mstsc.exe`). Ứng dụng khởi đầu với workspace trống; “Khám phá giao diện” hiển thị các máy chủ mẫu được đánh dấu rõ và không kết nối tới chúng.
 
 ## Đã có trong v1
@@ -81,6 +83,8 @@ npm run test:desktop  # mở Electron, kiểm tra UI + SSH/SFTP + DPAPI
 npm run dist          # tạo bộ cài + portable trong release/
 npm run test:portable # kiểm tra khởi động file portable .exe
 ```
+
+Kiểm thử nâng cấp: đặt cả portable 1.0.0 và bản hiện tại vào `release/`, rồi chạy `node scripts/upgrade-smoke.cjs`. Kiểm thử dùng workspace riêng với 50 kết nối và xác nhận mật khẩu mã hóa cũ vẫn đăng nhập SSH được sau nâng cấp.
 
 Kiểm thử bản đóng gói (PowerShell):
 

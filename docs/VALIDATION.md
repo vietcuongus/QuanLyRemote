@@ -19,6 +19,12 @@
 - `npm run dist`: produces NSIS setup and portable x64 executables.
 - `npm run test:portable`: starts the actual portable wrapper, checks the production
   UI, empty initial workspace and Windows encryption, then closes it.
+- `node scripts/upgrade-smoke.cjs`: launches portable v1.0.0 and the current version
+  against the same disposable workspace. Preserves 50 profiles and DPAPI-encrypted
+  passwords, five groups, a multiline snippet, preferences and a fixture host pin.
+  Opening the update leaves workspace bytes unchanged; a saved password then
+  authenticates a real SSH session and sends input. Requires both portable binaries
+  in `release/`; evidence is `artifacts/upgrade-smoke.json`.
 - `npm audit --omit=dev`: checks production dependencies before publication.
 
 Evidence: artifacts/desktop-smoke.json, artifacts/packaged-smoke.json and screenshots.
