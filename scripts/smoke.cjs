@@ -12,7 +12,7 @@ async function main() {
   const artifacts = path.join(root, 'artifacts'); fs.mkdirSync(artifacts, { recursive: true });
   const directory = fs.mkdtempSync(path.join(artifacts, 'desktop-smoke-'));
   const fixture = await createFixture();
-  let app;
+  let app, clipboardSaved = false;
   const errors = [], steps = [];
   try {
     const env = { ...process.env, QLR_DATA_DIR: directory }; delete env.ELECTRON_RUN_AS_NODE;
@@ -85,6 +85,53 @@ async function main() {
     await page.waitForFunction(() => window.__smokeOutput.includes('Tiếng Việt ✓'));
     await page.evaluate(() => { window.__smokeStop(); delete window.__smokeStop; delete window.__smokeOutput; });
     assert.ok(fixture.state.input.includes('unicode'));
+    // Keep clipboard contents in the Electron process only, never in logs or files.
+    await app.evaluate(({ clipboard }) => {
+      global.__smokeClipboard = { text: clipboard.readText(), html: clipboard.readHTML(), rtf: clipboard.readRTF(), image: clipboard.readImage() };
+      clipboard.writeText('echo paste-regression');
+    });
+    clipboardSaved = true;
+    const terminal = page.locator('.terminal-container .xterm-helper-textarea');
+    const assertInput = async (expected, action) => {
+      const start = fixture.state.input.length;
+      await action();
+      const deadline = Date.now() + 2500;
+      while (fixture.state.input.slice(start).length < expected.length && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 25));
+      // Catch delayed duplicate native paste events as well as the initial packet.
+      await new Promise(resolve => setTimeout(resolve, 100));
+      assert.equal(fixture.state.input.slice(start), expected);
+    };
+    await terminal.focus();
+    await assertInput('echo paste-regression', () => page.keyboard.press('Control+v'));
+    await app.evaluate(({ clipboard }) => clipboard.writeText('echo Tiếng Việt ✓\r\necho second\n'));
+    await assertInput('echo Tiếng Việt ✓\recho second\r', () => page.keyboard.press('Control+Shift+v'));
+    await app.evaluate(({ clipboard }) => clipboard.writeText('echo shift-insert'));
+    await assertInput('echo shift-insert', () => page.keyboard.press('Shift+Insert'));
+    await app.evaluate(({ clipboard }) => clipboard.writeText('echo toolbar'));
+    await assertInput('echo toolbar', () => page.getByRole('button', { name: 'Dán', exact: true }).click());
+    assert.ok(await terminal.evaluate(node => node === document.activeElement), 'Paste button restores terminal focus.');
+    await app.evaluate(({ clipboard }) => clipboard.writeText(''));
+    await assertInput('', () => page.keyboard.press('Control+v'));
+    await assertInput('\x03', () => page.keyboard.press('Control+c'));
+    await assertInput('', () => page.keyboard.press('Control+Shift+c'));
+    // Let a real server enable bracketed paste and verify bytes received over SSH.
+    await page.evaluate(() => {
+      window.__smokeModeReady = false;
+      window.__smokeModeStop = window.remote.onEvent(event => { if (event.type === 'data' && event.data.includes('\x1b[?2004h')) setTimeout(() => { window.__smokeModeReady = true; }, 75); });
+    });
+    fixture.setBracketedPaste(true);
+    await page.waitForFunction(() => window.__smokeModeReady);
+    await app.evaluate(({ clipboard }) => clipboard.writeText('echo bracketed\r\necho ✓'));
+    await assertInput('\x1b[200~echo bracketed\recho ✓\x1b[201~', () => page.keyboard.press('Control+v'));
+    fixture.setBracketedPaste(false);
+    await page.evaluate(() => { window.__smokeModeStop(); delete window.__smokeModeStop; delete window.__smokeModeReady; });
+    // Ordinary inputs retain native paste and never send text to SSH.
+    await page.keyboard.press('Control+f');
+    await app.evaluate(({ clipboard }) => clipboard.writeText('search-only'));
+    await assertInput('', () => page.keyboard.press('Control+v'));
+    assert.equal(await page.locator('.terminal-search input').inputValue(), 'search-only');
+    await page.keyboard.press('Escape');
+    steps.push('Windows clipboard paste: Ctrl+V, Ctrl+Shift+V, Shift+Insert and toolbar; Unicode/multiline/bracketed paste arrive exactly once. Empty paste, Ctrl+C interrupt and search input isolation verified.');
     await page.screenshot({ path: path.join(artifacts, '04-ssh-terminal.png'), animations: 'disabled' });
     steps.push('Actual desktop SSH connects through verified host-key dialog, runs interactive terminal I/O and displays UTF-8.');
 
@@ -143,6 +190,10 @@ async function main() {
     assert.equal(await page.locator('.palette-results > button').count(), 1);
     await page.screenshot({ path: path.join(artifacts, '07-command-palette.png'), animations: 'disabled' });
     await page.keyboard.press('Escape');
+    await page.locator('.palette-results').waitFor({ state: 'hidden' });
+    await page.locator('.main-nav').getByRole('button', { name: 'Saved commands', exact: true }).click();
+    await page.locator('.snippet-card').getByRole('button', { name: 'Copy', exact: true }).click();
+    assert.equal(await app.evaluate(({ clipboard }) => clipboard.readText()), 'df -h');
     steps.push('Saved commands, theme persistence, English UI and keyboard command palette work.');
 
     await page.evaluate(async () => {
@@ -154,7 +205,11 @@ async function main() {
     fs.writeFileSync(path.join(artifacts, executablePath ? 'packaged-smoke.json' : 'desktop-smoke.json'), JSON.stringify({ passed: true, steps, errors, security: windowSettings }, null, 2));
     console.log(JSON.stringify({ passed: true, checks: steps.length, steps }, null, 2));
   } finally {
-    if (app) await app.close();
+    if (app && clipboardSaved) await app.evaluate(({ clipboard }) => { clipboard.write(global.__smokeClipboard); delete global.__smokeClipboard; }).catch(() => {});
+    if (app) {
+      await app.evaluate(({ dialog }) => { dialog.showMessageBox = async () => ({ response: 1 }); }).catch(() => {});
+      await app.close();
+    }
     await fixture.close();
     fs.rmSync(directory, { recursive: true, force: true });
   }

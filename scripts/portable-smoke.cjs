@@ -7,7 +7,8 @@ const assert = require('node:assert/strict');
 
 async function main() {
   const root = path.resolve(__dirname, '..'), artifacts = path.join(root, 'artifacts');
-  const executable = path.join(root, 'release/QuanLyRemote-1.0.0-x64-portable.exe');
+  const { version } = require('../package.json');
+  const executable = path.join(root, `release/QuanLyRemote-${version}-x64-portable.exe`);
   assert.ok(fs.existsSync(executable), 'Build the portable executable first.');
   const directory = fs.mkdtempSync(path.join(artifacts, 'portable-smoke-'));
   const server = net.createServer();
@@ -29,7 +30,7 @@ async function main() {
     page = context.pages()[0] || await context.waitForEvent('page', { timeout: 15000 });
     await page.locator('.empty-demo-link').waitFor();
     const workspace = await page.evaluate(() => window.remote.load());
-    assert.equal(workspace.version, '1.0.0');
+    assert.equal(workspace.version, version);
     assert.equal(workspace.profiles.length, 0);
     assert.equal(workspace.encryptionAvailable, true);
     await page.screenshot({ path: path.join(artifacts, '08-portable-executable.png'), animations: 'disabled' });

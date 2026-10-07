@@ -9,7 +9,11 @@
 - `npm run test:desktop`: Playwright launches the production Electron UI. Checks
   labelled samples, search/filtering, forms, Windows DPAPI, interactive SSH,
   dual-pane SFTP upload/download/mkdir, snippets, dark/light, vi/en, command palette,
-  renderer isolation and 1024px layout.
+  renderer isolation and 1024px layout. Windows clipboard regression checks cover
+  Ctrl+V, Ctrl+Shift+V, Shift+Insert, toolbar paste, Unicode, multiline normalization,
+  bracketed paste, exactly-once delivery, empty clipboard, Ctrl+C interrupt and
+  native paste in the terminal search field. The old v1.0.0 failed by sending SYN
+  (`0x16`) instead of clipboard text; v1.0.1 passes with real SSH transport.
 - The same desktop checks can target `release/win-unpacked/QuanLyRemote.exe`,
   exercising the packaged runtime, assets and bundled dependencies.
 - `npm run dist`: produces NSIS setup and portable x64 executables.

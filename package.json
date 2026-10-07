@@ -1,6 +1,6 @@
 {
   "name": "quanlyremote",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A fast, polished Windows workspace for SSH, SFTP and remote desktops.",
   "author": "vietcuongus",
   "license": "MIT",
@@ -34,12 +34,24 @@
   "build": {
     "appId": "io.vietcuongus.quanlyremote",
     "productName": "QuanLyRemote",
-    "directories": { "output": "release" },
-    "files": ["dist/**/*", "electron/**/*", "build/icon.ico", "package.json", "LICENSE", "THIRD_PARTY_NOTICES.md"],
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "build/icon.ico",
+      "package.json",
+      "LICENSE",
+      "THIRD_PARTY_NOTICES.md"
+    ],
     "asar": true,
     "npmRebuild": false,
     "win": {
-      "target": ["nsis", "portable"],
+      "target": [
+        "nsis",
+        "portable"
+      ],
       "icon": "build/icon.ico",
       "artifactName": "${productName}-${version}-${arch}.${ext}"
     },
@@ -50,6 +62,8 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
     },
-    "portable": { "artifactName": "${productName}-${version}-${arch}-portable.${ext}" }
+    "portable": {
+      "artifactName": "${productName}-${version}-${arch}-portable.${ext}"
+    }
   }
 }

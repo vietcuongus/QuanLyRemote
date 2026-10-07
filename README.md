@@ -8,8 +8,8 @@
 
 Tải từ [GitHub Releases](https://github.com/vietcuongus/QuanLyRemote/releases):
 
-- `QuanLyRemote-1.0.0-x64-setup.exe`: bộ cài, chọn thư mục cài đặt, tạo shortcut.
-- `QuanLyRemote-1.0.0-x64-portable.exe`: chạy trực tiếp, không cần cài Node.js hoặc phần mềm terminal khác.
+- `QuanLyRemote-1.0.1-x64-setup.exe`: bộ cài, chọn thư mục cài đặt, tạo shortcut.
+- `QuanLyRemote-1.0.1-x64-portable.exe`: chạy trực tiếp, không cần cài Node.js hoặc phần mềm terminal khác.
 
 Yêu cầu **Windows 10/11 64-bit**. RDP sử dụng Windows Remote Desktop (`mstsc.exe`). Ứng dụng khởi đầu với workspace trống; “Khám phá giao diện” hiển thị các máy chủ mẫu được đánh dấu rõ và không kết nối tới chúng.
 
@@ -46,6 +46,8 @@ Yêu cầu **Windows 10/11 64-bit**. RDP sử dụng Windows Remote Desktop (`ms
 | `Ctrl Tab` / `Ctrl Shift Tab` | Chuyển tab |
 | `Ctrl Shift F` | Mở SFTP của phiên hiện tại |
 | `Ctrl W` | Đóng phiên hiện tại |
+| `Ctrl V` / `Ctrl Shift V` / `Shift Insert` | Dán clipboard vào terminal SSH; có nút Dán trên thanh công cụ |
+| `Ctrl Shift C` | Sao chép phần đang chọn trong terminal; `Ctrl C` vẫn ngắt lệnh |
 | `Ctrl F` | Tìm trong terminal; Enter / Shift Enter chuyển kết quả |
 | `Esc` | Đóng hộp thoại / palette / tìm terminal |
 

@@ -14,6 +14,7 @@ async function createFixture(options = {}) {
   const userKey = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 }).privateKey.export({ type: 'pkcs1', format: 'pem' });
   const parsedUserKey = utils.parseKey(userKey);
   const keyPath = path.join(root, 'identity.pem'); fs.writeFileSync(keyPath, userKey);
+  const shells = new Set();
   const connections = new Set(), state = { input: '', geometry: null, auth: [] };
   const server = new Server({ hostKeys: [hostKey] }, client => {
     connections.add(client);
@@ -31,6 +32,7 @@ async function createFixture(options = {}) {
       session.on('window-change', (acceptChange, _reject, info) => { state.geometry = info; acceptChange?.(); });
       session.on('shell', acceptShell => {
         const stream = acceptShell();
+        shells.add(stream); stream.once('close', () => shells.delete(stream));
         stream.write('\x1b[32mQuanLyRemote integration server\x1b[0m\r\nWelcome, tester.\r\n$ ');
         let line = '';
         stream.on('data', data => {
@@ -56,6 +58,7 @@ async function createFixture(options = {}) {
   const port = server.address().port;
   return {
     root, hostKey, keyPath, state, port,
+    setBracketedPaste(enabled) { for (const stream of shells) stream.write(enabled ? '\x1b[?2004h' : '\x1b[?2004l'); },
     profile: { id: 'fixture-server', name: 'Integration server', host: '127.0.0.1', port, username: 'tester', protocol: 'ssh', auth: 'password', group: 'Tests', tags: [] },
     async close() {
       for (const client of connections) client.end();

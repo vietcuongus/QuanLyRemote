@@ -52,3 +52,23 @@ jobs:
           path: |
             artifacts/*.json
             artifacts/*.png
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: windows
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@v4
+        with:
+          name: QuanLyRemote-windows-x64
+          path: release
+      - name: Publish tested Windows binaries
+        run: node scripts/publish.cjs
+        env:
+          GH_TOKEN: ${{ github.token }}

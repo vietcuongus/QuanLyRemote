@@ -1,17 +1,11 @@
-QuanLyRemote v1.0.0 — ứng dụng Windows cho SSH, SFTP và Remote Desktop.
+QuanLyRemote v1.0.1 — sửa thao tác copy/paste trên Windows.
 
-- Giao diện tối/sáng, Tiếng Việt/English, nhóm/nhãn/yêu thích/tìm kiếm.
-- SSH nhiều tab, xác thực mật khẩu/khóa/agent, xác minh khóa máy chủ.
-- SFTP hai cột, upload/download, tiến độ/hủy, tạo thư mục/đổi tên/xóa.
-- RDP mở qua Windows Remote Desktop.
-- Lệnh đã lưu, command palette, phím tắt, sao lưu cấu hình không chứa mật khẩu.
-- Mật khẩu tùy chọn mã hóa bằng Windows DPAPI.
+- Sửa Ctrl + V gửi ký tự điều khiển thay vì nội dung clipboard vào SSH.
+- Hỗ trợ Ctrl + V, Ctrl + Shift + V, Shift + Insert và nút Dán trên thanh terminal.
+- Sao chép phần đang chọn bằng Ctrl + Shift + C hoặc nút Sao chép; Ctrl + C vẫn ngắt lệnh.
+- Sửa nút Sao chép ở Lệnh đã lưu bằng clipboard Windows.
+- Giữ xử lý tiếng Việt, xuống dòng và bracketed paste; không dán lặp hai lần.
 
-Tải `setup.exe` để cài, hoặc `portable.exe` để chạy trực tiếp. Windows 10/11 x64;
-không cần cài Node.js. Đối chiếu SHA-256 trong SHA256SUMS.txt. Bản đầu chưa ký số.
-
-Đã chạy 20 kiểm thử unit/integration SSH/SFTP và kiểm thử UI trên ứng dụng desktop
-cùng bản đóng gói. Kiểm thử dùng máy chủ localhost; chưa kiểm tra server riêng của bạn.
-
-Phiên bản này chưa có jump host/tunnel, split pane, FTP/VNC, AI agent hay cloud sync.
-Xem README và docs/USER_GUIDE.md để bắt đầu.
+Đã kiểm thử trên máy chủ SSH cục bộ, UI desktop và ứng dụng đóng gói.
+Đóng bản cũ, chạy bản portable hoặc cài đè bằng setup. Cấu hình được giữ trong cùng thư mục dữ liệu.
+Windows 10/11 x64. Bản chưa ký số; SHA256SUMS.txt đi kèm mỗi release.

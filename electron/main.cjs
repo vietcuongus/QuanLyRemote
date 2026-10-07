@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, safeStorage, protocol, net, session } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, safeStorage, protocol, net, session, clipboard } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const os = require('node:os');
@@ -49,6 +49,11 @@ const localPath = value => {
 };
 
 function registerHandlers() {
+  handle('clipboard:read', () => clipboard.readText());
+  handle('clipboard:write', text => {
+    if (typeof text !== 'string' || text.length > 2 * 1024 * 1024) throw new Error('Nội dung sao chép không hợp lệ.');
+    clipboard.writeText(text);
+  });
   handle('workspace:load', () => ({ ...store.snapshot(), version: app.getVersion(), localHome: os.homedir(), platform: process.platform }));
   handle('profile:save', (profile, credential) => store.save(profile, credential));
   handle('profile:delete', async id => {

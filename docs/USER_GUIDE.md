@@ -26,6 +26,11 @@ Terminal hỗ trợ ứng dụng toàn màn hình như vim/htop qua PTY. Resize 
 đến server. Ngắt SSH có thể dừng tiến trình phụ thuộc phiên; sử dụng tmux/screen
 trên máy chủ nếu muốn duy trì công việc sau khi ngắt.
 
+Copy lệnh từ ứng dụng bên ngoài, nhấp vào terminal rồi nhấn **Ctrl + V** để dán.
+Có thể dùng Ctrl + Shift + V, Shift + Insert hoặc nút **Dán** trên thanh công cụ.
+Sao chép phần đang chọn bằng Ctrl + Shift + C hoặc nút Sao chép; Ctrl + C vẫn ngắt lệnh.
+Lệnh một dòng không tự thêm Enter. Lệnh nhiều dòng dùng bracketed paste khi shell bật chế độ này.
+
 ## SFTP
 
 Mở File SFTP trong phiên SSH hoặc tạo kết nối SFTP riêng. Cột trái là máy tính này,

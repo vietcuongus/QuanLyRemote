@@ -7,6 +7,8 @@ const invoke = async (channel, ...args) => {
 };
 
 contextBridge.exposeInMainWorld('remote', {
+  readClipboard: () => invoke('clipboard:read'),
+  copyText: text => invoke('clipboard:write', text),
   load: () => invoke('workspace:load'),
   saveProfile: (profile, credential) => invoke('profile:save', profile, credential),
   deleteProfile: id => invoke('profile:delete', id),

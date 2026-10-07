@@ -3,7 +3,7 @@ import { Terminal as XTerminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { SearchAddon } from '@xterm/addon-search';
 import '@xterm/xterm/css/xterm.css';
-import { ArrowUp, Upload, Download, RefreshCw, Folder, File, FolderPlus, Pencil, Trash2, Search, X, Copy, Eraser, ChevronRight, ArrowDown, HardDrive, Globe, FolderOpen } from 'lucide-react';
+import { ArrowUp, Upload, Download, RefreshCw, Folder, File, FolderPlus, Pencil, Trash2, Search, X, Copy, ClipboardPaste, Eraser, ChevronRight, ArrowDown, HardDrive, Globe, FolderOpen } from 'lucide-react';
 import { bytes, shortDate, terminalBus } from './utils';
 import { Spinner, TextDialog } from './components';
 
@@ -13,6 +13,21 @@ export function TerminalPane({ session, active, settings, t, notify }) {
   const container = useRef(), instance = useRef(), fit = useRef(), search = useRef();
   const [searching, setSearching] = useState(false), [query, setQuery] = useState(''), [matches, setMatches] = useState(null);
   const notifyRef = useRef(notify); notifyRef.current = notify;
+  const activeRef = useRef(active); activeRef.current = active;
+  const pasteClipboard = async () => {
+    const term = instance.current;
+    if (!term || term.options.disableStdin || !activeRef.current) return;
+    try {
+      const text = await window.remote.readClipboard();
+      // A tab can close, disconnect or become inactive while IPC is in flight.
+      if (instance.current !== term || term.options.disableStdin || !activeRef.current) return;
+      term.paste(text); term.focus();
+    } catch (error) { notifyRef.current(error.message, 'error'); }
+  };
+  const copySelection = async () => {
+    try { const text = instance.current?.getSelection(); if (text) await window.remote.copyText(text); }
+    catch (error) { notifyRef.current(error.message, 'error'); }
+  };
   useEffect(() => {
     const term = new XTerminal({
       cursorBlink: true, cursorStyle: 'bar', fontSize: settings.fontSize,
@@ -30,19 +45,27 @@ export function TerminalPane({ session, active, settings, t, notify }) {
     const resize = term.onResize(({ cols, rows }) => { window.remote.resize(session.id, cols, rows).catch(() => {}); });
     finder.onDidChangeResults(result => setMatches(result.resultCount ? `${result.resultIndex + 1}/${result.resultCount}` : '0/0'));
     term.attachCustomKeyEventHandler(e => {
+      const key = e.key.toLowerCase();
+      const paste = !e.altKey && !e.metaKey && ((e.ctrlKey && key === 'v') || (e.shiftKey && !e.ctrlKey && key === 'insert'));
+      const copy = !e.altKey && !e.metaKey && e.ctrlKey && e.shiftKey && key === 'c';
+      if (paste || copy) {
+        e.preventDefault(); e.stopPropagation();
+        if (e.type === 'keydown') void (paste ? pasteClipboard() : copySelection());
+        return false;
+      }
       if (e.ctrlKey && e.key.toLowerCase() === 'f') { if (e.type === 'keydown') setSearching(true); return false; }
       if (e.ctrlKey && ['k', 'n', 'w', 'tab'].includes(e.key.toLowerCase())) return false;
       return true;
     });
     const observer = new ResizeObserver(() => { if (container.current?.offsetWidth) { try { fitter.fit(); } catch {} } });
     observer.observe(container.current);
-    return () => { observer.disconnect(); unsubscribe(); input.dispose(); resize.dispose(); terminalInstances.delete(session.id); term.dispose(); };
+    return () => { observer.disconnect(); unsubscribe(); input.dispose(); resize.dispose(); terminalInstances.delete(session.id); instance.current = null; term.dispose(); };
   }, [session.id]);
   useEffect(() => { if (instance.current) instance.current.options.fontSize = settings.fontSize; }, [settings.fontSize]);
   useEffect(() => { if (instance.current) instance.current.options.disableStdin = session.status !== 'connected'; }, [session.status]);
   useEffect(() => { if (active) { const timer = setTimeout(() => { try { fit.current?.fit(); instance.current?.focus(); } catch {} }, 50); return () => clearTimeout(timer); } }, [active]);
   return <div className="terminal-pane">
-    <div className="terminal-toolbar"><span><span className={`status-dot ${session.status}`} />{session.profile.username}@{session.profile.host}<span className="terminal-badge">SSH {session.profile.port}</span></span><div>{searching && <div className="terminal-search"><input autoFocus placeholder={t.search} value={query} onChange={e => { setQuery(e.target.value); search.current?.findNext(e.target.value, { incremental: true }); }} onKeyDown={e => { if (e.key === 'Enter') e.shiftKey ? search.current?.findPrevious(query) : search.current?.findNext(query); if (e.key === 'Escape') { setSearching(false); instance.current?.focus(); } }} /><small>{matches}</small><button aria-label="Previous match" className="icon-button" onClick={() => search.current?.findPrevious(query)}><ArrowUp size={14} /></button><button aria-label="Next match" className="icon-button" onClick={() => search.current?.findNext(query)}><ArrowDown size={14} /></button><button aria-label="Close search" className="icon-button" onClick={() => { setSearching(false); search.current?.clearDecorations(); }}><X size={14} /></button></div>}<button className="icon-button" title="Ctrl F" aria-label={t.search} onClick={() => setSearching(v => !v)}><Search size={16} /></button><button className="icon-button" title={t.copy} aria-label={t.copy} onClick={async () => { try { const text = instance.current?.getSelection(); if (text) { await navigator.clipboard.writeText(text); notify(t.saved); } } catch (e) { notify(e.message, 'error'); } }}><Copy size={16} /></button><button className="icon-button" title={t.clear} aria-label={t.clear} onClick={() => instance.current?.clear()}><Eraser size={16} /></button></div></div>
+    <div className="terminal-toolbar"><span><span className={`status-dot ${session.status}`} />{session.profile.username}@{session.profile.host}<span className="terminal-badge">SSH {session.profile.port}</span></span><div>{searching && <div className="terminal-search"><input autoFocus placeholder={t.search} value={query} onChange={e => { setQuery(e.target.value); search.current?.findNext(e.target.value, { incremental: true }); }} onKeyDown={e => { if (e.key === 'Enter') e.shiftKey ? search.current?.findPrevious(query) : search.current?.findNext(query); if (e.key === 'Escape') { setSearching(false); instance.current?.focus(); } }} /><small>{matches}</small><button aria-label="Previous match" className="icon-button" onClick={() => search.current?.findPrevious(query)}><ArrowUp size={14} /></button><button aria-label="Next match" className="icon-button" onClick={() => search.current?.findNext(query)}><ArrowDown size={14} /></button><button aria-label="Close search" className="icon-button" onClick={() => { setSearching(false); search.current?.clearDecorations(); }}><X size={14} /></button></div>}<button className="icon-button" title="Ctrl F" aria-label={t.search} onClick={() => setSearching(v => !v)}><Search size={16} /></button><button className="icon-button" title={t.copy + ' (Ctrl+Shift+C)'} aria-label={t.copy} onClick={copySelection}><Copy size={16} /></button><button className="icon-button" title={t.paste + ' (Ctrl+V / Ctrl+Shift+V / Shift+Insert)'} aria-label={t.paste} disabled={session.status !== 'connected'} onClick={pasteClipboard}><ClipboardPaste size={16} /></button><button className="icon-button" title={t.clear} aria-label={t.clear} onClick={() => instance.current?.clear()}><Eraser size={16} /></button></div></div>
     <div className="terminal-container" ref={container} />
     <footer className="terminal-footer"><span><span className={`status-dot ${session.status}`} />{t[session.status] || session.status}</span><span>xterm-256color <span className="divider">/</span> UTF-8 <span className="divider">/</span> {settings.fontSize}px</span></footer>
   </div>;
