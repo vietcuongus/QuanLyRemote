@@ -17,8 +17,9 @@ class Sessions {
     this.transfers = new Map();
   }
 
-  async connect(profile, secret = '', mode = 'terminal', geometry = {}) {
-    const id = crypto.randomUUID();
+  async connect(profile, secret = '', mode = 'terminal', geometry = {}, tabId) {
+    const id = tabId || crypto.randomUUID();
+    if (this.sessions.has(id)) throw new Error('Phiên này đã được kết nối.');
     const client = new Client();
     const entry = { id, profile, client, stream: null, sftp: null, sftpPromise: null, closed: false, status: 'connecting' };
     this.sessions.set(id, entry);
@@ -46,12 +47,16 @@ class Sessions {
       await new Promise((resolve, reject) => {
         let settled = false;
         const fail = (error) => {
+          if (settled && this.sessions.get(id) !== entry) return;
           if (!settled) { settled = true; reject(error); }
           else event('error', { message: error.message });
           this.disconnect(id);
         };
         client.on('error', fail);
         client.on('close', () => {
+          // An explicitly reconnected tab may already have a new transport.
+          const current = this.sessions.get(id);
+          if (current && current !== entry) return;
           if (!settled) { settled = true; reject(new Error('Kết nối đã đóng trước khi đăng nhập hoàn tất.')); }
           entry.closed = true;
           entry.status = 'disconnected';
@@ -94,7 +99,7 @@ class Sessions {
       entry.stream.on('data', data => this.emit({ type: 'data', sessionId: id, data: decoder.write(data) }));
       entry.stream.stderr.on('data', data => this.emit({ type: 'data', sessionId: id, data: errorDecoder.write(data) }));
       entry.stream.on('error', error => this.emit({ type: 'error', sessionId: id, message: error.message }));
-      entry.stream.once('close', () => this.disconnect(id));
+      entry.stream.once('close', () => { if (this.sessions.get(id) === entry) this.disconnect(id); });
     })();
     try { await entry.shellPromise; } finally { entry.shellPromise = null; }
   }

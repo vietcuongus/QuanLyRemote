@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const { normalizeProfile, normalizeSettings, normalizeSnippet, parseImport } = require('./core.cjs');
+const { normalizeProfile, normalizeSettings, normalizeSessionLayout, normalizeSnippet, parseImport } = require('./core.cjs');
 
 class Store {
   constructor(directory, encryption) {
@@ -9,7 +9,7 @@ class Store {
     this.file = path.join(directory, 'workspace.json');
     this.encryption = encryption;
     this.temporarySecrets = new Map();
-    this.data = { version: 1, profiles: [], secrets: {}, hosts: {}, snippets: [], settings: normalizeSettings() };
+    this.data = { version: 1, profiles: [], secrets: {}, hosts: {}, snippets: [], settings: normalizeSettings(), sessionLayout: normalizeSessionLayout() };
     fs.mkdirSync(directory, { recursive: true });
     if (fs.existsSync(this.file)) {
       const loaded = JSON.parse(fs.readFileSync(this.file, 'utf8'));
@@ -21,6 +21,7 @@ class Store {
       };
       if (loaded.snippets !== undefined && (!Array.isArray(loaded.snippets) || loaded.snippets.length > 2000)) throw new Error('Dữ liệu lệnh đã lưu không hợp lệ.');
       this.data = { version: 1, profiles: loaded.profiles.map(normalizeProfile), secrets: record(loaded.secrets, 2000), hosts: record(loaded.hosts, 10000), snippets: (loaded.snippets || []).map(normalizeSnippet), settings: normalizeSettings(loaded.settings) };
+      this.data.sessionLayout = normalizeSessionLayout(loaded.sessionLayout, this.data.profiles);
     }
   }
 
@@ -39,6 +40,7 @@ class Store {
       profiles: this.data.profiles.map(p => ({ ...p, hasSecret: Boolean(this.data.secrets[p.id] || this.temporarySecrets.has(p.id)), secretSaved: Boolean(this.data.secrets[p.id]) })),
       snippets: this.data.snippets,
       settings: this.data.settings,
+      sessionLayout: { tabs: this.data.sessionLayout.tabs.map(tab => ({ ...tab })), activeTab: this.data.sessionLayout.activeTab },
       knownHosts: Object.entries(this.data.hosts).map(([address, key]) => ({ address, fingerprint: key })),
       encryptionAvailable: this.encryption.isEncryptionAvailable(),
     };
@@ -88,6 +90,7 @@ class Store {
     this.data.profiles = this.data.profiles.filter(p => p.id !== id);
     delete this.data.secrets[id];
     this.temporarySecrets.delete(id);
+    this.data.sessionLayout = normalizeSessionLayout(this.data.sessionLayout, this.data.profiles);
     this.persist();
     return this.snapshot();
   }
@@ -101,6 +104,26 @@ class Store {
   trustHost(address, key) { this.data.hosts[address] = key; this.persist(); }
   forgetHost(address) { delete this.data.hosts[address]; this.persist(); return this.snapshot(); }
   settings(input) { this.data.settings = normalizeSettings(input); this.persist(); return this.snapshot(); }
+
+  sessionLayout(input) {
+    const layout = normalizeSessionLayout(input, this.data.profiles);
+    if (JSON.stringify(layout) !== JSON.stringify(this.data.sessionLayout)) {
+      this.data.sessionLayout = layout;
+      this.persist();
+    }
+    return this.snapshot().sessionLayout;
+  }
+
+  rememberSession(tab) {
+    const layout = this.data.sessionLayout;
+    if (layout.tabs.some(item => item.id === tab.id)) return;
+    this.sessionLayout({ tabs: [...layout.tabs, tab], activeTab: tab.id });
+  }
+
+  closeSession(id) {
+    const layout = this.data.sessionLayout;
+    this.sessionLayout({ tabs: layout.tabs.filter(tab => tab.id !== id), activeTab: layout.activeTab === id ? 'home' : layout.activeTab });
+  }
 
   saveSnippet(input) {
     const snippet = normalizeSnippet(input);

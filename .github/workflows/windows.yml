@@ -24,12 +24,15 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm run test:desktop
+      - run: npm run test:restore
       - run: npm run dist
       - name: Smoke test packaged executable
         shell: pwsh
         run: |
           $env:QLR_SMOKE_EXE = (Resolve-Path './release/win-unpacked/QuanLyRemote.exe').Path
           npm run test:desktop
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run test:restore
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - run: npm run test:portable
       - name: Release checksums

@@ -8,8 +8,8 @@
 
 Tải từ [GitHub Releases](https://github.com/vietcuongus/QuanLyRemote/releases):
 
-- `QuanLyRemote-1.0.1-x64-setup.exe`: bộ cài, chọn thư mục cài đặt, tạo shortcut.
-- `QuanLyRemote-1.0.1-x64-portable.exe`: chạy trực tiếp, không cần cài Node.js hoặc phần mềm terminal khác.
+- `QuanLyRemote-1.0.2-x64-setup.exe`: bộ cài, chọn thư mục cài đặt, tạo shortcut.
+- `QuanLyRemote-1.0.2-x64-portable.exe`: chạy trực tiếp, không cần cài Node.js hoặc phần mềm terminal khác.
 
 **Cập nhật từ bản cũ:** đóng QuanLyRemote, chạy bộ cài mới và cài đè trên cùng tài khoản Windows. Kết nối, nhóm, lệnh đã lưu và mật khẩu mã hóa được giữ trong AppData. Nếu đang dùng portable, đóng file cũ rồi chạy file portable mới. Nếu có thiết lập `QLR_DATA_DIR`, tiếp tục dùng cùng thư mục dữ liệu đó.
 
@@ -25,6 +25,7 @@ Yêu cầu **Windows 10/11 64-bit**. RDP sử dụng Windows Remote Desktop (`ms
 | SFTP | Duyệt máy tính/máy chủ ở hai cột; tải lên/xuống; tiến độ và hủy; tạo thư mục, đổi tên, xóa file hoặc thư mục rỗng |
 | RDP | Mở máy chủ đã lưu trong cửa sổ Windows Remote Desktop; Windows xử lý đăng nhập |
 | Lệnh đã lưu | Lưu/sửa/xóa lệnh nhiều dòng; sao chép hoặc chèn vào terminal đang mở |
+| Phiên làm việc | Nhớ thứ tự tab, tab đang chọn và chế độ Terminal/SFTP; tự kết nối lại khi mở ứng dụng |
 | Bảo mật | Xác minh dấu vân tay SSH; chặn khóa thay đổi; mật khẩu tùy chọn mã hóa bằng Windows DPAPI |
 | Cấu hình | Dark/Light, Tiếng Việt/English, cỡ chữ terminal; nhập/xuất JSON không chứa mật khẩu |
 
@@ -37,6 +38,14 @@ Yêu cầu **Windows 10/11 64-bit**. RDP sử dụng Windows Remote Desktop (`ms
 5. Trong phiên, chuyển giữa **Terminal** và **File SFTP**. Chọn file ở cột trái để tải lên, chọn file ở cột phải để tải xuống; nhấp đúp thư mục để đi vào.
 
 “Kết nối nhanh” nhận hostname/IP, hoặc `hostname:port`, rồi mở biểu mẫu để xác thực và lưu. Với IPv6, nhập IP và cổng riêng trong biểu mẫu.
+
+## Khôi phục phiên làm việc
+
+Mặc định bật **Cài đặt → Khôi phục phiên khi mở ứng dụng**. Mở các phiên SSH/SFTP cần làm việc; ứng dụng tự nhớ tab ngay trong lúc sử dụng. Đóng cả tool giữ lại các tab cho lần mở sau; đóng một tab bằng nút X loại tab đó khỏi danh sách khôi phục.
+
+Các phiên có mật khẩu/khóa đã lưu hoặc SSH agent sẵn sàng tự kết nối lại. Phiên chưa lưu mật khẩu mở lại ở trạng thái chờ; nhấn **Kết nối lại** để nhập mật khẩu. Máy offline hoặc lỗi đăng nhập không chặn các phiên khác. RDP chạy trong Windows Remote Desktop riêng nên không nằm trong danh sách tab khôi phục.
+
+Khôi phục tạo kết nối SSH mới; không tự chạy lại lệnh, giữ lịch sử terminal hay tiếp tục truyền file. Dùng tmux/screen trên máy chủ để giữ chương trình đang chạy qua nhiều lần kết nối. Các bản trước 1.0.2 chưa lưu tab: sau cập nhật, mở các tab một lần để bắt đầu ghi nhớ.
 
 ## Phím tắt
 
@@ -80,6 +89,7 @@ npm run dev
 npm test              # unit + integration SSH/SFTP qua server localhost
 npm run build         # build production
 npm run test:desktop  # mở Electron, kiểm tra UI + SSH/SFTP + DPAPI
+npm run test:restore  # đóng/mở tool nhiều lần, kiểm tra tab và kết nối tự khôi phục
 npm run dist          # tạo bộ cài + portable trong release/
 npm run test:portable # kiểm tra khởi động file portable .exe
 ```

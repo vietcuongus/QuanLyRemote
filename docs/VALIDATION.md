@@ -1,6 +1,6 @@
 # Validation scope
 
-- `npm test`: 20 Node tests with real SSH transport on localhost. Password/key
+- `npm test`: 25 Node tests with real SSH transport on localhost. Password/key
   authentication, host-key rejection before login, PTY, input/resize, fragmented
   UTF-8, SFTP listing/mkdir/rename/delete, binary upload/download, progress,
   cancellation, preservation of existing files, failed-session cleanup. Storage
@@ -16,6 +16,11 @@
   (`0x16`) instead of clipboard text; v1.0.1 passes with real SSH transport.
 - The same desktop checks can target `release/win-unpacked/QuanLyRemote.exe`,
   exercising the packaged runtime, assets and bundled dependencies.
+- `npm run test:restore`: closes and relaunches the production UI four times.
+  Checks duplicate sessions to one host, ordered tabs, active SFTP, real saved-password
+  SSH reconnection, missing credentials, offline-server isolation, reconnecting in
+  the existing tab, excluding explicitly closed tabs, and disabling restore without
+  deleting saved connections. Also runs against the packaged executable.
 - `npm run dist`: produces NSIS setup and portable x64 executables.
 - `npm run test:portable`: starts the actual portable wrapper, checks the production
   UI, empty initial workspace and Windows encryption, then closes it.

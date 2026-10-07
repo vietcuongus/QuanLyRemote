@@ -20,6 +20,16 @@ if (process.argv.includes('--check')) {
   const sums = files.map(name => `${crypto.createHash('sha256').update(fs.readFileSync(path.join(release, name))).digest('hex')}  ${name}`).join('\n') + '\n';
   fs.writeFileSync(path.join(release, 'SHA256SUMS.txt'), sums);
   const commit = execute('git', ['rev-parse', 'HEAD']);
-  const url = execute('gh', ['release', 'create', `v${version}`, ...files.map(name => path.join(release, name)), path.join(release, 'SHA256SUMS.txt'), '--repo', 'vietcuongus/QuanLyRemote', '--verify-tag', '--target', commit, '--title', `QuanLyRemote v${version} — SSH, SFTP & Remote Desktop`, '--notes-file', path.join(root, 'docs/RELEASE_NOTES.md')], { env });
-  console.log(url);
+  const repo = 'vietcuongus/QuanLyRemote', tag = `v${version}`;
+  const assets = [...files.map(name => path.join(release, name)), path.join(release, 'SHA256SUMS.txt')];
+  const existing = spawnSync('gh', ['release', 'view', tag, '--repo', repo, '--json', 'url,assets'], { cwd: root, env, encoding: 'utf8', windowsHide: true });
+  if (existing.error) throw existing.error;
+  if (existing.status === 0) {
+    const published = JSON.parse(existing.stdout);
+    const missing = assets.filter(file => !published.assets.some(asset => asset.name === path.basename(file) && asset.size > 0));
+    if (missing.length) execute('gh', ['release', 'upload', tag, ...missing, '--repo', repo], { env });
+  } else {
+    execute('gh', ['release', 'create', tag, ...assets, '--repo', repo, '--verify-tag', '--target', commit, '--title', `QuanLyRemote ${tag} — SSH, SFTP & Remote Desktop`, '--notes-file', path.join(root, 'docs/RELEASE_NOTES.md')], { env });
+  }
+  console.log(execute('gh', ['release', 'view', tag, '--repo', repo, '--json', 'url', '--jq', '.url'], { env }));
 }

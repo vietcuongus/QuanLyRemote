@@ -127,3 +127,51 @@ test('corrupt workspace is reported without replacing the original file', t => {
     assert.equal(fs.readFileSync(file, 'utf8'), original);
   }
 });
+
+test('working tabs preserve order, duplicates by profile, view and focus across restart without storing secrets', t => {
+  const { store, directory } = createStore(t);
+  const saved = store.save(profile, { secret: 'restore-sensitive-value', remember: true }).profiles[0];
+  store.sessionLayout({ tabs: [{ id: 'tab-a', profileId: saved.id, view: 'terminal', password: 'must-not-save', terminalOutput: 'must-not-save' }, { id: 'tab-b', profileId: saved.id, view: 'files' }], activeTab: 'tab-b' });
+  const restarted = new Store(directory, mockEncryption);
+  assert.deepEqual(restarted.snapshot().sessionLayout, { tabs: [{ id: 'tab-a', profileId: saved.id, view: 'terminal' }, { id: 'tab-b', profileId: saved.id, view: 'files' }], activeTab: 'tab-b' });
+  assert.equal(restarted.secret(saved.id), 'restore-sensitive-value');
+  assert.equal(fs.readFileSync(store.file, 'utf8').includes('must-not-save'), false);
+  assert.equal(store.export().includes('sessionLayout'), false);
+});
+
+test('closed tabs and deleted profiles leave the working layout while disconnects can remain restorable', t => {
+  const { store, directory } = createStore(t);
+  const saved = store.save(profile).profiles[0];
+  store.rememberSession({ id: 'tab-a', profileId: saved.id, view: 'terminal' });
+  store.rememberSession({ id: 'tab-b', profileId: saved.id, view: 'files' });
+  store.closeSession('tab-a');
+  assert.deepEqual(new Store(directory, mockEncryption).snapshot().sessionLayout.tabs.map(tab => tab.id), ['tab-b']);
+  store.remove(saved.id);
+  assert.deepEqual(store.snapshot().sessionLayout, { tabs: [], activeTab: 'home' });
+});
+
+test('old workspaces gain restore defaults without rewriting their contents or losing profiles', t => {
+  const { directory } = createStore(t);
+  const file = path.join(directory, 'workspace.json');
+  const original = JSON.stringify({ version: 1, profiles: [profile], settings: { theme: 'light', fontSize: 18 } });
+  fs.writeFileSync(file, original);
+  const loaded = new Store(directory, mockEncryption);
+  assert.equal(loaded.snapshot().settings.restoreSessions, true);
+  assert.deepEqual(loaded.snapshot().sessionLayout.tabs, []);
+  assert.equal(loaded.snapshot().profiles.length, 1);
+  assert.equal(fs.readFileSync(file, 'utf8'), original);
+});
+
+test('invalid working layouts do not mutate saved state; stale and RDP tabs are filtered out', t => {
+  const { store } = createStore(t);
+  const saved = store.save(profile).profiles[0];
+  const rdp = store.save({ ...profile, id: 'rdp-fixture', protocol: 'rdp' }).profiles.at(-1);
+  store.rememberSession({ id: 'valid-tab', profileId: saved.id, view: 'terminal' });
+  const before = fs.readFileSync(store.file, 'utf8');
+  for (const invalid of [null, { tabs: 'bad' }, { tabs: [{ id: 'bad', profileId: saved.id, view: 'other' }] }, { tabs: [{ id: 'same', profileId: saved.id, view: 'terminal' }, { id: 'same', profileId: saved.id, view: 'files' }] }]) assert.throws(() => store.sessionLayout(invalid));
+  assert.equal(fs.readFileSync(store.file, 'utf8'), before);
+  store.sessionLayout({ tabs: [{ id: 'missing', profileId: 'removed-profile', view: 'files' }, { id: 'rdp-tab', profileId: rdp.id, view: 'terminal' }], activeTab: 'missing' });
+  assert.deepEqual(store.snapshot().sessionLayout, { tabs: [], activeTab: 'home' });
+  store.settings({ restoreSessions: false });
+  assert.equal(store.snapshot().settings.restoreSessions, false);
+});

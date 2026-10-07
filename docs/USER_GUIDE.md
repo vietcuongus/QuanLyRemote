@@ -31,6 +31,18 @@ Có thể dùng Ctrl + Shift + V, Shift + Insert hoặc nút **Dán** trên than
 Sao chép phần đang chọn bằng Ctrl + Shift + C hoặc nút Sao chép; Ctrl + C vẫn ngắt lệnh.
 Lệnh một dòng không tự thêm Enter. Lệnh nhiều dòng dùng bracketed paste khi shell bật chế độ này.
 
+## Lưu phiên làm việc
+
+Từ v1.0.2, tùy chọn **Khôi phục phiên khi mở ứng dụng** trong Cài đặt bật mặc định.
+Tool nhớ tab SSH/SFTP, thứ tự tab, chế độ Terminal/File SFTP và tab đang chọn.
+Đóng toàn bộ ứng dụng rồi mở lại sẽ khôi phục các tab và tự kết nối lại bằng thông tin đã lưu.
+Phiên chưa lưu mật khẩu vẫn có tab, với nút Kết nối lại để nhập mật khẩu khi cần.
+Máy offline không chặn những phiên còn lại. Nút X trên từng tab bỏ tab đó khỏi danh sách.
+
+Không lưu nội dung terminal hoặc mật khẩu vào danh sách phiên. Các kết nối trước 1.0.2
+vẫn còn; mở lại các tab mong muốn một lần để bắt đầu ghi nhớ. Khôi phục là tạo kết nối mới;
+dùng tmux/screen trên máy chủ nếu cần giữ chương trình đang chạy. RDP vẫn mở qua cửa sổ Windows riêng.
+
 ## SFTP
 
 Mở File SFTP trong phiên SSH hoặc tạo kết nối SFTP riêng. Cột trái là máy tính này,

@@ -28,7 +28,10 @@ function handle(channel, callback) {
   });
 }
 
-const emit = event => { if (window && !window.isDestroyed()) window.webContents.send('session:event', event); };
+const emit = event => {
+  if (event.type === 'status' && event.status === 'connecting') store.rememberSession({ id: event.sessionId, profileId: event.profileId, view: event.mode === 'sftp' ? 'files' : 'terminal' });
+  if (window && !window.isDestroyed()) window.webContents.send('session:event', event);
+};
 
 async function verifyHost(address, key) {
   const known = store.hostKey(address);
@@ -86,15 +89,30 @@ function registerHandlers() {
     const { canceled, filePaths } = await dialog.showOpenDialog(window, { title: 'Chọn khóa SSH (OpenSSH / PEM)', properties: ['openFile'] });
     return canceled ? null : filePaths[0];
   });
-  handle('session:connect', async (profileId, secret, mode) => {
+  handle('session:layout', layout => {
+    if (!layout || !Array.isArray(layout.tabs)) throw new Error('Danh sách phiên không hợp lệ.');
+    for (const tab of layout.tabs) {
+      const known = store.data.sessionLayout.tabs.find(item => item.id === tab.id);
+      if (!known || known.profileId !== tab.profileId) throw new Error('Phiên chưa được mở.');
+    }
+    const pending = store.data.sessionLayout.tabs.filter(tab => sessions.sessions.has(tab.id) && !layout.tabs.some(item => item.id === tab.id));
+    return store.sessionLayout({ ...layout, tabs: [...layout.tabs, ...pending] });
+  });
+  handle('session:connect', async (profileId, secret, mode, tabId) => {
     const profile = store.find(profileId);
     if (!['terminal', 'sftp'].includes(mode)) throw new Error('Chế độ không hợp lệ.');
     if (profile.protocol === 'rdp') throw new Error('Dùng chức năng Remote Desktop cho kết nối RDP.');
     if (secret !== undefined && (typeof secret !== 'string' || secret.length > 16000)) throw new Error('Mật khẩu không hợp lệ.');
-    return sessions.connect(profile, secret === undefined ? store.secret(profile.id) : secret, mode);
+    if (tabId !== undefined && !store.data.sessionLayout.tabs.some(tab => tab.id === tabId && tab.profileId === profile.id)) throw new Error('Không tìm thấy phiên đã lưu.');
+    const credential = secret === undefined ? store.secret(profile.id) : secret;
+    if (tabId && sessions.sessions.has(tabId)) {
+      if (sessions.sessions.get(tabId).status === 'connecting') throw new Error('Phiên đang kết nối.');
+      sessions.disconnect(tabId);
+    }
+    return sessions.connect(profile, credential, mode, {}, tabId);
   });
   handle('session:shell', (id, geometry) => sessions.openShell(id, geometry));
-  handle('session:disconnect', id => sessions.disconnect(id));
+  handle('session:disconnect', id => { store.closeSession(id); sessions.disconnect(id); });
   handle('session:write', (id, data) => sessions.write(id, data));
   handle('session:resize', (id, cols, rows) => sessions.resize(id, cols, rows));
   handle('sftp:list', (id, directory) => sessions.list(id, directory));

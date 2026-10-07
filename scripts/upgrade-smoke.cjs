@@ -72,7 +72,7 @@ async function main() {
     assert.equal(updated.version, currentVersion);
     assert.deepEqual(updated.profiles, previous.profiles);
     assert.deepEqual(updated.snippets, previous.snippets);
-    assert.deepEqual(updated.settings, previous.settings);
+    assert.deepEqual(updated.settings, { restoreSessions: true, ...previous.settings });
     assert.deepEqual(fs.readFileSync(workspacePath), bytesBefore, 'Opening the update must preserve the original workspace byte for byte.');
     assert.equal(updated.knownHosts[0].fingerprint, fingerprint);
     assert.equal(updated.profiles.every(profile => profile.secretSaved), true);

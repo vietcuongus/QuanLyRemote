@@ -144,3 +144,20 @@ test('disconnect during connection rejects the pending operation', async t => {
   await assert.rejects(connecting);
   assert.equal(manager.sessions.size, 0);
 });
+
+test('reconnecting a saved tab replaces its transport without old close or error callbacks ending the new session', async t => {
+  const { fixture, manager, events } = await setup(t);
+  const session = await manager.connect(fixture.profile, 'fixture-only-password', 'terminal', {}, 'stable-work-tab');
+  const previous = manager.get(session.id);
+  manager.disconnect(session.id);
+  const pending = manager.connect(fixture.profile, 'fixture-only-password', 'terminal', {}, session.id);
+  previous.client.emit('error', new Error('Late error from old transport'));
+  const reconnected = await pending;
+  assert.equal(reconnected.id, session.id);
+  await new Promise(resolve => setTimeout(resolve, 50));
+  assert.equal(manager.get(session.id).status, 'connected');
+  manager.write(session.id, 'replacement-transport\r');
+  await until(() => fixture.state.input.includes('replacement-transport\r'));
+  assert.equal(events.filter(event => event.type === 'status' && event.status === 'connected').length, 2);
+  await assert.rejects(manager.connect(fixture.profile, 'fixture-only-password', 'terminal', {}, session.id), /đã được kết nối/);
+});

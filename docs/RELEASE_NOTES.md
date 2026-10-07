@@ -1,11 +1,16 @@
-QuanLyRemote v1.0.1 — sửa thao tác copy/paste trên Windows.
+QuanLyRemote v1.0.2 — lưu và khôi phục phiên làm việc.
 
-- Sửa Ctrl + V gửi ký tự điều khiển thay vì nội dung clipboard vào SSH.
-- Hỗ trợ Ctrl + V, Ctrl + Shift + V, Shift + Insert và nút Dán trên thanh terminal.
-- Sao chép phần đang chọn bằng Ctrl + Shift + C hoặc nút Sao chép; Ctrl + C vẫn ngắt lệnh.
-- Sửa nút Sao chép ở Lệnh đã lưu bằng clipboard Windows.
-- Giữ xử lý tiếng Việt, xuống dòng và bracketed paste; không dán lặp hai lần.
+- Tự nhớ tab SSH/SFTP, thứ tự tab, chế độ Terminal/File SFTP và tab đang chọn.
+- Mở tool lại sẽ khôi phục tab và tự kết nối bằng mật khẩu/khóa đã lưu hoặc SSH agent.
+- Phiên chưa lưu mật khẩu có tab chờ nhập; máy offline không chặn các phiên khác.
+- Đóng cả tool giữ danh sách phiên; đóng riêng một tab bằng X loại tab đó khỏi lần khôi phục sau.
+- Có tùy chọn bật/tắt Khôi phục phiên khi mở ứng dụng trong Cài đặt, mặc định bật.
+- Giữ bản sửa copy/paste của 1.0.1 và dữ liệu kết nối/mật khẩu đã lưu từ bản cũ.
 
-Đã kiểm thử trên máy chủ SSH cục bộ, UI desktop và ứng dụng đóng gói.
-Đóng bản cũ, chạy bản portable hoặc cài đè bằng setup. Cấu hình được giữ trong cùng thư mục dữ liệu.
-Windows 10/11 x64. Bản chưa ký số; SHA256SUMS.txt đi kèm mỗi release.
+Đóng tool cũ rồi chạy setup để cài đè trên cùng tài khoản Windows; portable thì chạy file mới.
+Các bản trước 1.0.2 chưa lưu tab: mở các tab cần làm việc một lần sau cập nhật để tool ghi nhớ.
+Khôi phục tạo kết nối SSH mới, không tự chạy lại lệnh hoặc tiếp tục truyền file.
+Dùng tmux/screen nếu cần giữ chương trình trên server. RDP chạy trong cửa sổ Windows riêng.
+
+Đã kiểm thử SSH/SFTP, nhiều lần đóng/mở lại UI và bản đóng gói, cùng nâng cấp dữ liệu cũ.
+Windows 10/11 x64. Bản chưa ký số; SHA256SUMS.txt đi kèm release.

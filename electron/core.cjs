@@ -2,7 +2,7 @@ const net = require('node:net');
 const path = require('node:path');
 const crypto = require('node:crypto');
 
-const DEFAULT_SETTINGS = Object.freeze({ theme: 'dark', language: 'vi', fontSize: 14, confirmClose: true });
+const DEFAULT_SETTINGS = Object.freeze({ theme: 'dark', language: 'vi', fontSize: 14, confirmClose: true, restoreSessions: true });
 
 function boundedString(value, name, max = 200, required = false) {
   if (typeof value !== 'string' || value.length > max || /[\x00-\x1f]/.test(value)) throw new Error(`${name} không hợp lệ.`);
@@ -42,7 +42,23 @@ function normalizeSettings(input = {}) {
     language: ['vi', 'en'].includes(input.language) ? input.language : DEFAULT_SETTINGS.language,
     fontSize: Number.isInteger(input.fontSize) && input.fontSize >= 11 && input.fontSize <= 22 ? input.fontSize : DEFAULT_SETTINGS.fontSize,
     confirmClose: input.confirmClose !== false,
+    restoreSessions: input.restoreSessions !== false,
   };
+}
+
+function normalizeSessionLayout(input = { tabs: [], activeTab: 'home' }, profiles = []) {
+  if (!input || !Array.isArray(input.tabs) || input.tabs.length > 500) throw new Error('Danh sách phiên làm việc không hợp lệ.');
+  const allowed = new Set(profiles.filter(profile => profile.protocol !== 'rdp').map(profile => profile.id));
+  const ids = new Set(), tabs = [];
+  for (const tab of input.tabs) {
+    if (!tab || !['terminal', 'files'].includes(tab.view)) throw new Error('Chế độ phiên không hợp lệ.');
+    const id = boundedString(tab.id, 'ID phiên', 80, true);
+    const profileId = boundedString(tab.profileId, 'ID kết nối', 80, true);
+    if (ids.has(id)) throw new Error('ID phiên trùng nhau.');
+    ids.add(id);
+    if (allowed.has(profileId)) tabs.push({ id, profileId, view: tab.view });
+  }
+  return { tabs, activeTab: tabs.some(tab => tab.id === input.activeTab) ? input.activeTab : 'home' };
 }
 
 function remotePath(value) {
@@ -74,4 +90,4 @@ function normalizeSnippet(input) {
   return { id: input.id ? boundedString(input.id, 'ID', 80, true) : crypto.randomUUID(), name: boundedString(input.name, 'tên lệnh', 80, true), command: input.command };
 }
 
-module.exports = { DEFAULT_SETTINGS, normalizeProfile, normalizeSettings, normalizeSnippet, remotePath, fileName, fingerprint, parseImport };
+module.exports = { DEFAULT_SETTINGS, normalizeProfile, normalizeSettings, normalizeSessionLayout, normalizeSnippet, remotePath, fileName, fingerprint, parseImport };
