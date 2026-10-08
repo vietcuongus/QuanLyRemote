@@ -102,6 +102,39 @@ async function main() {
       assert.equal(fixture.state.input.slice(start), expected);
     };
     await terminal.focus();
+    // Select real xterm cells with the mouse, then check Windows clipboard and SSH bytes.
+    // Without the selection-aware Ctrl+C branch this sends ETX (interrupt) instead.
+    await page.waitForFunction(() => {
+      const textarea = document.querySelector('.xterm-helper-textarea');
+      const rows = document.querySelectorAll('.xterm-rows > div');
+      return [...rows].some(row => row.textContent.includes('Tiếng Việt ✓')) && textarea === document.activeElement;
+    });
+    const row = page.locator('.xterm-rows > div').filter({ hasText: 'Tiếng Việt ✓' }).last();
+    const box = await row.boundingBox();
+    const cell = await page.locator('.xterm-screen').evaluate(element => {
+      const ruler = document.createElement('span');
+      ruler.textContent = 'M'; ruler.style.cssText = 'position:absolute;white-space:pre;';
+      ruler.style.font = getComputedStyle(element.querySelector('.xterm-rows')).font;
+      element.appendChild(ruler); const width = ruler.getBoundingClientRect().width; ruler.remove();
+      return width;
+    });
+    assert.ok(box && cell > 0, 'Terminal cells must be visible for mouse selection.');
+    await page.mouse.move(box.x + 1, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + cell * 12, box.y + box.height / 2, { steps: 12 });
+    await page.mouse.up();
+    await app.evaluate(({ clipboard }) => clipboard.writeText('copy-selection-sentinel'));
+    await assertInput('', () => page.keyboard.press('Control+c'));
+    assert.equal(await app.evaluate(({ clipboard }) => clipboard.readText()), 'Tiếng Việt ✓', 'Ctrl+C must copy the mouse-selected terminal text.');
+    await assertInput('', () => page.keyboard.press('Control+c'));
+    await app.evaluate(({ clipboard }) => clipboard.writeText('shift-copy-sentinel'));
+    await assertInput('', () => page.keyboard.press('Control+Shift+c'));
+    assert.equal(await app.evaluate(({ clipboard }) => clipboard.readText()), 'Tiếng Việt ✓');
+    await page.mouse.click(box.x + 2, box.y + box.height / 2);
+    await assertInput('\x03', () => page.keyboard.press('Control+c'));
+    assert.equal(await app.evaluate(({ clipboard }) => clipboard.readText()), 'Tiếng Việt ✓', 'No-selection interrupt must leave the clipboard alone.');
+    steps.push('Ctrl+C copies real mouse-selected Unicode terminal text without interrupting SSH; repeated copy and Ctrl+Shift+C work, and unselected Ctrl+C still sends one interrupt.');
+    await app.evaluate(({ clipboard }) => clipboard.writeText('echo paste-regression'));
     await assertInput('echo paste-regression', () => page.keyboard.press('Control+v'));
     await app.evaluate(({ clipboard }) => clipboard.writeText('echo Tiếng Việt ✓\r\necho second\n'));
     await assertInput('echo Tiếng Việt ✓\recho second\r', () => page.keyboard.press('Control+Shift+v'));
@@ -130,6 +163,9 @@ async function main() {
     await app.evaluate(({ clipboard }) => clipboard.writeText('search-only'));
     await assertInput('', () => page.keyboard.press('Control+v'));
     assert.equal(await page.locator('.terminal-search input').inputValue(), 'search-only');
+    await page.keyboard.press('Control+a');
+    await assertInput('', () => page.keyboard.press('Control+c'));
+    assert.equal(await app.evaluate(({ clipboard }) => clipboard.readText()), 'search-only', 'Ctrl+C in a text input must retain native copy behavior.');
     await page.keyboard.press('Escape');
     steps.push('Windows clipboard paste: Ctrl+V, Ctrl+Shift+V, Shift+Insert and toolbar; Unicode/multiline/bracketed paste arrive exactly once. Empty paste, Ctrl+C interrupt and search input isolation verified.');
     await page.screenshot({ path: path.join(artifacts, '04-ssh-terminal.png'), animations: 'disabled' });

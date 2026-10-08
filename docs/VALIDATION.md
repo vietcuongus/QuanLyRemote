@@ -12,12 +12,16 @@
   renderer isolation and 1024px layout. Windows clipboard regression checks cover
   Ctrl+V, Ctrl+Shift+V, Shift+Insert, toolbar paste, Unicode, multiline normalization,
   bracketed paste, exactly-once delivery, empty clipboard, Ctrl+C interrupt and
-  native paste in the terminal search field. The old v1.0.0 failed by sending SYN
+  native paste/copy in the terminal search field. v1.0.3 checks mouse-selected
+  Unicode copy with Ctrl+C, repeated copy, Ctrl+Shift+C and one interrupt when
+  nothing is selected. The old v1.0.0 failed by sending SYN
   (`0x16`) instead of clipboard text; v1.0.1 passes with real SSH transport.
 - The same desktop checks can target `release/win-unpacked/QuanLyRemote.exe`,
   exercising the packaged runtime, assets and bundled dependencies.
 - `npm run test:restore`: closes and relaunches the production UI four times.
-  Checks duplicate sessions to one host, ordered tabs, active SFTP, real saved-password
+  Checks native mouse drag and keyboard tab reordering in both directions,
+  ignoring self/outside drops, preservation of focus and reordered layout on restart,
+  duplicate sessions to one host, active SFTP, real saved-password
   SSH reconnection, missing credentials, offline-server isolation, reconnecting in
   the existing tab, excluding explicitly closed tabs, and disabling restore without
   deleting saved connections. Also runs against the packaged executable.

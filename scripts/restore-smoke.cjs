@@ -51,9 +51,33 @@ async function main() {
     await page.evaluate(async () => { try { await window.remote.connect('restore-offline', undefined, 'terminal'); } catch {} });
     await page.locator('.session-tab').nth(1).locator('button').first().click();
     await page.waitForFunction(({ first, second, password }) => window.remote.load().then(data => data.sessionLayout.tabs.length === 4 && data.sessionLayout.tabs[0].id === first && data.sessionLayout.tabs[1].id === second && data.sessionLayout.tabs[2].id === password && data.sessionLayout.tabs[1].view === 'files' && data.sessionLayout.activeTab === second), { first: first.id, second: second.id, password: password.id });
+    // Native mouse drag must change live tab order and the persisted layout.
+    const original = (await loaded()).sessionLayout;
+    const originalIds = original.tabs.map(tab => tab.id);
+    await page.locator('.session-tab').nth(2).locator('button').first().dragTo(page.locator('.session-tab').nth(0), { targetPosition: { x: 5, y: 20 } });
+    await page.waitForFunction(({ password, second }) => window.remote.load().then(data => data.sessionLayout.tabs[0]?.id === password && data.sessionLayout.activeTab === second), { password: password.id, second: second.id }, { timeout: 3000 });
+    assert.deepEqual((await loaded()).sessionLayout.tabs.map(tab => tab.id), [password.id, first.id, second.id, originalIds[3]]);
+    assert.deepEqual(await page.locator('.session-tab > button:first-child').allTextContents(), ['Password required', 'Remembered SSH', 'Remembered SSH', 'Offline SSH']);
+    // Move it right again and back left, then restart in the reordered layout.
+    const targetBox = await page.locator('.session-tab').nth(2).boundingBox();
+    await page.locator('.session-tab').nth(0).locator('button').first().dragTo(page.locator('.session-tab').nth(2), { targetPosition: { x: targetBox.width - 5, y: 20 } });
+    await page.waitForFunction(ids => window.remote.load().then(data => data.sessionLayout.tabs.map(tab => tab.id).join() === ids.join()), originalIds, { timeout: 3000 });
+    await page.locator('.session-tab').nth(2).locator('button').first().focus();
+    await page.keyboard.press('Alt+Shift+ArrowLeft');
+    await page.waitForFunction(({ first, password, second }) => window.remote.load().then(data => data.sessionLayout.tabs[0]?.id === first && data.sessionLayout.tabs[1]?.id === password && data.sessionLayout.tabs[2]?.id === second), { first: first.id, password: password.id, second: second.id }, { timeout: 3000 });
+    await page.keyboard.press('Alt+Shift+ArrowRight');
+    await page.waitForFunction(ids => window.remote.load().then(data => data.sessionLayout.tabs.map(tab => tab.id).join() === ids.join()), originalIds, { timeout: 3000 });
+    await page.locator('.session-tab').nth(2).locator('button').first().dragTo(page.locator('.session-tab').nth(0), { targetPosition: { x: 5, y: 20 } });
+    await page.waitForFunction(id => window.remote.load().then(data => data.sessionLayout.tabs[0]?.id === id), password.id, { timeout: 3000 });
+    // Dropping outside the tab bar must neither close nor reorder sessions.
+    const reordered = (await loaded()).sessionLayout;
+    await page.locator('.session-tab').nth(0).locator('button').first().dragTo(page.locator('.session-tab').nth(0), { targetPosition: { x: 5, y: 20 } });
+    assert.deepEqual((await loaded()).sessionLayout, reordered);
+    await page.locator('.session-tab').nth(0).locator('button').first().dragTo(page.locator('.app-statusbar'), { targetPosition: { x: 30, y: 10 } });
+    assert.deepEqual((await loaded()).sessionLayout, reordered);
     const before = (await loaded()).sessionLayout;
     assert.equal(JSON.stringify(before).includes('fixture-only-password'), false);
-    steps.push('Four tabs persist in order, including two sessions to the same server, an SFTP view, a session-only password and an offline server.');
+    steps.push('Mouse drag and keyboard reorder tabs left/right, preserving the active SFTP tab; drops outside the bar or onto the same tab do nothing. Reordered layout is saved for restart.');
     await close();
     assert.deepEqual(JSON.parse(fs.readFileSync(path.join(directory, 'workspace.json'), 'utf8')).sessionLayout, before);
 
@@ -76,7 +100,7 @@ async function main() {
     await page.locator('.session-view:not([hidden]) .file-pane').nth(1).getByText('readme.txt', { exact: true }).waitFor();
     steps.push('Reconnecting an already connected SFTP tab preserves its ID/view and the replacement transport remains usable.');
 
-    await page.locator('.session-tab').nth(2).locator('button').first().click();
+    await page.locator('.session-tab').nth(0).locator('button').first().click();
     await page.getByText('Phiên đã khôi phục. Nhấn Kết nối lại để nhập mật khẩu.', { exact: true }).waitFor();
     await page.locator('.session-view:not([hidden])').getByRole('button', { name: 'Kết nối lại', exact: true }).click();
     const dialog = page.getByRole('dialog');
@@ -84,8 +108,8 @@ async function main() {
     await dialog.getByRole('button', { name: 'Kết nối', exact: true }).click();
     await page.waitForFunction(() => document.querySelectorAll('.session-tab .status-dot.connected').length === 3);
     assert.equal(await page.locator('.session-tab').count(), 4, 'Reconnect reuses the restored tab instead of adding a duplicate.');
-    assert.equal((await loaded()).sessionLayout.tabs[2].id, password.id);
-    await page.locator('.session-tab').nth(2).locator('.tab-close').click();
+    assert.equal((await loaded()).sessionLayout.tabs[0].id, password.id);
+    await page.locator('.session-tab').nth(0).locator('.tab-close').click();
     await page.waitForFunction(() => window.remote.load().then(data => data.sessionLayout.tabs.length === 3));
     const closed = (await loaded()).sessionLayout;
     assert.equal(closed.tabs.some(tab => tab.id === password.id), false);

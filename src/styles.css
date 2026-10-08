@@ -146,6 +146,11 @@ kbd { font-family: inherit; font-size: 10px; color: var(--secondary); border: 1p
 .session-tabs { display: flex; overflow: auto; scrollbar-width: thin; }
 .session-tab { display: flex; align-items: center; min-width: 130px; max-width: 210px; padding: 0 9px 0 13px; border-right: 1px solid var(--border-soft); position: relative; }
 .session-tab.selected { background: var(--bg); }
+.session-tab > button[draggable] { cursor: grab; user-select: none; }
+.session-tab > button[draggable]:active { cursor: grabbing; }
+.session-tab.drop-before::after, .session-tab.drop-after::after { content: ''; position: absolute; top: 5px; bottom: 5px; width: 2px; background: var(--mint); pointer-events: none; z-index: 1; }
+.session-tab.drop-before::after { left: 0; }
+.session-tab.drop-after::after { right: 0; }
 .session-tab > button:first-child { display: flex; gap: 8px; align-items: center; padding: 0; color: var(--secondary); font-size: 11px; min-width: 0; flex: 1; height: 100%; }
 .session-tab > button:first-child > span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .session-tab.selected > button:first-child { color: var(--text); }

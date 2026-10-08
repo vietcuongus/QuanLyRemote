@@ -35,6 +35,7 @@ export default function App() {
   const [demo, setDemo] = useState(!window.remote), [profileDialog, setProfileDialog] = useState(null), [credentialDialog, setCredentialDialog] = useState(null), [palette, setPalette] = useState(false), [snippetDialog, setSnippetDialog] = useState(null);
   const [sessions, setSessions] = useState([]), [activeTab, setActiveTab] = useState('home'), [transfers, setTransfers] = useState([]), [probes, setProbes] = useState({}), [toasts, setToasts] = useState([]), [quickHost, setQuickHost] = useState(''), [quickUser, setQuickUser] = useState('root');
   const restoredIdsRef = useRef(new Set());
+  const draggedTab = useRef(null), [tabDrop, setTabDrop] = useState(null);
   const workspaceRef = useRef(workspace), sessionsRef = useRef(sessions), activeRef = useRef(activeTab), toastTimers = useRef(new Set());
   workspaceRef.current = workspace; sessionsRef.current = sessions; activeRef.current = activeTab;
   const t = dictionary[workspace.settings.language];
@@ -134,6 +135,32 @@ export default function App() {
     terminalBus.clear(id);
     if (activeRef.current === id) setActiveTab('home');
   };
+  const moveTab = (id, targetId, after = false) => {
+    if (id === targetId) return;
+    setSessions(current => {
+      const source = current.find(session => session.id === id);
+      if (!source || !current.some(session => session.id === targetId)) return current;
+      const reordered = current.filter(session => session.id !== id);
+      reordered.splice(reordered.findIndex(session => session.id === targetId) + Number(after), 0, source);
+      return reordered;
+    });
+  };
+  const dragOverTab = (event, id) => {
+    if (!draggedTab.current || draggedTab.current === id) return;
+    event.preventDefault(); event.dataTransfer.dropEffect = 'move';
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const after = event.clientX >= bounds.left + bounds.width / 2;
+    setTabDrop(current => current?.id === id && current.after === after ? current : { id, after });
+  };
+  const dropOnTab = (event, id) => {
+    if (!draggedTab.current) return;
+    event.preventDefault();
+    if (event.dataTransfer.getData('application/x-quanlyremote-tab') === draggedTab.current) {
+      const bounds = event.currentTarget.getBoundingClientRect();
+      moveTab(draggedTab.current, id, event.clientX >= bounds.left + bounds.width / 2);
+    }
+    draggedTab.current = null; setTabDrop(null);
+  };
   const sessionView = async (id, view) => {
     const session = sessionsRef.current.find(s => s.id === id);
     if (view === 'terminal' && !session.terminalOpened) {
@@ -212,7 +239,7 @@ export default function App() {
   return <div className="app-shell">
     <div className="titlebar"><div className="titlebar-brand"><span className="tiny-logo"><Terminal size={13} /></span>QuanLyRemote<span className="version-chip">v{workspace.version}</span></div><div className="titlebar-center"><LockKeyhole size={11} />{t.localOnly}</div><div className="window-buttons"><button aria-label="Minimize" onClick={() => window.remote?.windowControl('minimize')}><Minus size={14} /></button><button aria-label="Maximize" onClick={() => window.remote?.windowControl('maximize')}><Maximize2 size={12} /></button><button className="window-close" aria-label="Close app" onClick={() => window.remote?.windowControl('close')}><X size={16} /></button></div></div>
     <div className="app-body"><aside className="sidebar"><a className="brand" href="#" onClick={e => { e.preventDefault(); navigate('overview'); }}><span className="brand-symbol"><Terminal size={23} strokeWidth={2.5} /></span><span>remote<span className="brand-dot">.</span><small>YOUR CONNECTION HUB</small></span></a><button className="workspace-switch" onClick={() => navigate('overview')}><span className="workspace-avatar">VC</span><span><strong>{t.localWorkspace}</strong><small>QuanLyRemote</small></span><ChevronDown size={15} /></button><button className="sidebar-search" onClick={() => setPalette(true)}><Search size={16} /><span>{language === 'vi' ? 'Tìm nhanh…' : 'Jump to…'}</span><kbd>Ctrl K</kbd></button><nav className="main-nav">{navigation.map(([id, Icon]) => <button key={id} className={activeTab === 'home' && route === id && !group ? 'selected' : ''} onClick={() => navigate(id)}><Icon size={18} /><span>{t[id]}</span>{id === 'favorites' && profiles.some(p => p.favorite) && <span className="nav-count">{profiles.filter(p => p.favorite).length}</span>}{id === 'transfers' && transfers.some(tr => tr.status === 'running') && <span className="nav-count mint-text">{transfers.filter(tr => tr.status === 'running').length}</span>}</button>)}</nav><div className="sidebar-section-title"><span>{t.groups}</span><button className="icon-button" aria-label={t.newConnection} title={t.newConnection} onClick={() => setProfileDialog({})}><Plus size={14} /></button></div><div className="group-nav">{groups.map((g, i) => <button key={g} className={group === g && activeTab === 'home' ? 'selected' : ''} onClick={() => navigate('overview', g)}><span className={`group-dot group-${i % 4}`} /><span>{g}</span><small>{profiles.filter(p => p.group === g).length}</small></button>)}{!groups.length && <button onClick={() => setProfileDialog({})}><Folder size={16} /><span>Personal</span><small>0</small></button>}</div><div className="sidebar-bottom"><div className="private-note"><ShieldCheck size={18} /><div><strong>{language === 'vi' ? 'Workspace riêng tư' : 'Private by design'}</strong><p>{t.localOnly}</p></div><span className="status-dot connected" /></div><button className={activeTab === 'home' && route === 'settings' ? 'selected settings-link' : 'settings-link'} onClick={() => navigate('settings')}><Settings2 size={18} /><span>{t.settings}</span><kbd>⚙</kbd></button></div></aside>
-    <div className="main-shell"><div className="tabbar"><button className={`workspace-tab ${activeTab === 'home' ? 'selected' : ''}`} onClick={() => setActiveTab('home')}><Grid2X2 size={15} />Workspace</button><div className="session-tabs">{sessions.map(s => <div key={s.id} className={`session-tab ${activeTab === s.id ? 'selected' : ''}`}><button onClick={() => setActiveTab(s.id)}><span className={`status-dot ${s.status}`} /><span>{s.profile.name}</span></button><button className="tab-close" aria-label={`${t.close} ${s.profile.name}`} onClick={() => closeSession(s.id)}><X size={13} /></button></div>)}</div><button className="tab-new icon-button" title={t.newConnection} aria-label={t.newConnection} onClick={() => setPalette(true)}><Plus size={16} /></button><div className="workspace-indicator"><span className="status-dot connected" />LOCAL</div></div>
+    <div className="main-shell"><div className="tabbar"><button className={`workspace-tab ${activeTab === 'home' ? 'selected' : ''}`} onClick={() => setActiveTab('home')}><Grid2X2 size={15} />Workspace</button><div className="session-tabs">{sessions.map(s => <div key={s.id} className={`session-tab ${activeTab === s.id ? 'selected' : ''} ${tabDrop?.id === s.id ? (tabDrop.after ? 'drop-after' : 'drop-before') : ''}`} onDragOver={e => dragOverTab(e, s.id)} onDrop={e => dropOnTab(e, s.id)} onDragLeave={() => setTabDrop(current => current?.id === s.id ? null : current)}><button draggable title={t.reorderTabs} onDragStart={e => { draggedTab.current = s.id; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('application/x-quanlyremote-tab', s.id); }} onDragEnd={() => { draggedTab.current = null; setTabDrop(null); }} onKeyDown={e => { if (e.altKey && e.shiftKey && ['ArrowLeft', 'ArrowRight'].includes(e.key)) { e.preventDefault(); const index = sessions.findIndex(tab => tab.id === s.id), right = e.key === 'ArrowRight', target = sessions[index + (right ? 1 : -1)]; if (target) moveTab(s.id, target.id, right); } }} onClick={() => setActiveTab(s.id)}><span className={`status-dot ${s.status}`} /><span>{s.profile.name}</span></button><button className="tab-close" aria-label={`${t.close} ${s.profile.name}`} onClick={() => closeSession(s.id)}><X size={13} /></button></div>)}</div><button className="tab-new icon-button" title={t.newConnection} aria-label={t.newConnection} onClick={() => setPalette(true)}><Plus size={16} /></button><div className="workspace-indicator"><span className="status-dot connected" />LOCAL</div></div>
     <div className="home-view" hidden={activeTab !== 'home'}>
       <header className="page-header"><div className="breadcrumbs"><Home size={14} /><ChevronRight size={12} /><span>Workspace</span><ChevronRight size={12} /><strong>{currentTitle}</strong></div><div className="header-actions"><span className="workspace-label"><span className="status-dot connected" />PERSONAL WORKSPACE</span><button className="icon-button" title={t.help} aria-label={t.help} onClick={() => setPalette(true)}><CircleHelp size={18} /></button><span className="user-avatar">VC</span></div></header>
       {demo && <div className="demo-banner"><Sparkles size={15} /><strong>{t.demo}</strong><span>{t.sampleHint}</span><button onClick={() => setDemo(false)}>{t.exitDemo}<X size={14} /></button></div>}

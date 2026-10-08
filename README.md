@@ -8,8 +8,8 @@
 
 Tải từ [GitHub Releases](https://github.com/vietcuongus/QuanLyRemote/releases):
 
-- `QuanLyRemote-1.0.2-x64-setup.exe`: bộ cài, chọn thư mục cài đặt, tạo shortcut.
-- `QuanLyRemote-1.0.2-x64-portable.exe`: chạy trực tiếp, không cần cài Node.js hoặc phần mềm terminal khác.
+- `QuanLyRemote-1.0.3-x64-setup.exe`: bộ cài, chọn thư mục cài đặt, tạo shortcut.
+- `QuanLyRemote-1.0.3-x64-portable.exe`: chạy trực tiếp, không cần cài Node.js hoặc phần mềm terminal khác.
 
 **Cập nhật từ bản cũ:** đóng QuanLyRemote, chạy bộ cài mới và cài đè trên cùng tài khoản Windows. Kết nối, nhóm, lệnh đã lưu và mật khẩu mã hóa được giữ trong AppData. Nếu đang dùng portable, đóng file cũ rồi chạy file portable mới. Nếu có thiết lập `QLR_DATA_DIR`, tiếp tục dùng cùng thư mục dữ liệu đó.
 
@@ -41,6 +41,8 @@ Yêu cầu **Windows 10/11 64-bit**. RDP sử dụng Windows Remote Desktop (`ms
 
 ## Khôi phục phiên làm việc
 
+Kéo phần tên tab sang trái/phải để sắp xếp; vạch sáng đánh dấu vị trí thả. Thứ tự mới được nhớ cho lần mở tiếp theo. Có thể focus tên tab rồi dùng Alt + Shift + ←/→.
+
 Mặc định bật **Cài đặt → Khôi phục phiên khi mở ứng dụng**. Mở các phiên SSH/SFTP cần làm việc; ứng dụng tự nhớ tab ngay trong lúc sử dụng. Đóng cả tool giữ lại các tab cho lần mở sau; đóng một tab bằng nút X loại tab đó khỏi danh sách khôi phục.
 
 Các phiên có mật khẩu/khóa đã lưu hoặc SSH agent sẵn sàng tự kết nối lại. Phiên chưa lưu mật khẩu mở lại ở trạng thái chờ; nhấn **Kết nối lại** để nhập mật khẩu. Máy offline hoặc lỗi đăng nhập không chặn các phiên khác. RDP chạy trong Windows Remote Desktop riêng nên không nằm trong danh sách tab khôi phục.
@@ -58,7 +60,9 @@ Khôi phục tạo kết nối SSH mới; không tự chạy lại lệnh, giữ
 | `Ctrl Shift F` | Mở SFTP của phiên hiện tại |
 | `Ctrl W` | Đóng phiên hiện tại |
 | `Ctrl V` / `Ctrl Shift V` / `Shift Insert` | Dán clipboard vào terminal SSH; có nút Dán trên thanh công cụ |
-| `Ctrl Shift C` | Sao chép phần đang chọn trong terminal; `Ctrl C` vẫn ngắt lệnh |
+| `Ctrl C` | Sao chép phần đang bôi đen trong terminal; nếu không bôi đen thì ngắt lệnh |
+| `Ctrl Shift C` | Sao chép phần đang chọn trong terminal |
+| `Alt Shift ←` / `Alt Shift →` | Đổi thứ tự tab đang focus sang trái/phải |
 | `Ctrl F` | Tìm trong terminal; Enter / Shift Enter chuyển kết quả |
 | `Esc` | Đóng hộp thoại / palette / tìm terminal |
 

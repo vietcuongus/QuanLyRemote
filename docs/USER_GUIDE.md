@@ -28,13 +28,16 @@ trên máy chủ nếu muốn duy trì công việc sau khi ngắt.
 
 Copy lệnh từ ứng dụng bên ngoài, nhấp vào terminal rồi nhấn **Ctrl + V** để dán.
 Có thể dùng Ctrl + Shift + V, Shift + Insert hoặc nút **Dán** trên thanh công cụ.
-Sao chép phần đang chọn bằng Ctrl + Shift + C hoặc nút Sao chép; Ctrl + C vẫn ngắt lệnh.
+Sao chép phần đang bôi đen bằng Ctrl + C, Ctrl + Shift + C hoặc nút Sao chép. Khi không bôi đen, Ctrl + C vẫn ngắt lệnh.
 Lệnh một dòng không tự thêm Enter. Lệnh nhiều dòng dùng bracketed paste khi shell bật chế độ này.
 
 ## Lưu phiên làm việc
 
 Từ v1.0.2, tùy chọn **Khôi phục phiên khi mở ứng dụng** trong Cài đặt bật mặc định.
 Tool nhớ tab SSH/SFTP, thứ tự tab, chế độ Terminal/File SFTP và tab đang chọn.
+Kéo phần tên tab sang vị trí mới để sắp xếp; vạch sáng đánh dấu nơi thả. Tab đang chọn
+và kết nối đang chạy được giữ nguyên. Thứ tự mới được nhớ cho lần mở tiếp theo.
+Khi focus tên tab, có thể dùng Alt + Shift + ←/→ để sắp xếp bằng bàn phím.
 Đóng toàn bộ ứng dụng rồi mở lại sẽ khôi phục các tab và tự kết nối lại bằng thông tin đã lưu.
 Phiên chưa lưu mật khẩu vẫn có tab, với nút Kết nối lại để nhập mật khẩu khi cần.
 Máy offline không chặn những phiên còn lại. Nút X trên từng tab bỏ tab đó khỏi danh sách.
